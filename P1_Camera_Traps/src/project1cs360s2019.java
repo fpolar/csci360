@@ -4,31 +4,33 @@ import java.io.FileNotFoundException;
 import java.util.*;
 import java.util.Map.Entry;
 
+import javafx.scene.Camera;
+
 public class Project1cs360s2019 {
-	
+
 	static Project1cs360s2019 world = new Project1cs360s2019();
-	
+
 	public static void main(String[] args) {
 		int i = 0;
-		for(;i<3;i++)
+		for (; i < 3; i++)
 			checkResult(simulateJungle("input" + i + ".txt"), i);
 	}
 
-	public class Jungle implements Comparable{
+	public class Jungle implements Comparable {
 		int size;
 		int imagesSecured;
 		HashMap<Point, Integer> animals;
 		Set<Point> cameras;
 		Set<Point> invalidLocations;
 //		Set<Point> validLocations; //If deriving this everytime from above field takes to long
-		//I'll look into implementing thi data structure back
+		// I'll look into implementing thi data structure back
 
-		public Jungle(int size, HashMap<Point, Integer> animals ) {
+		public Jungle(int size, HashMap<Point, Integer> animals) {
 			this.size = size;
 			this.animals = animals;
 			cameras = new HashSet<Point>();
 			invalidLocations = new HashSet<Point>();
-			//validLocations = size * size;
+			// validLocations = size * size;
 		}
 
 		/*
@@ -72,7 +74,8 @@ public class Project1cs360s2019 {
 //				System.out.println(cRow+", "+cCol+" Invalidated");
 				out += invalidLocations.add(new Point(cRow--, cCol++)) ? 1 : 0;
 			}
-
+			System.out.println(this);
+			invalidLocations.remove(p);
 			return out;
 		}
 
@@ -90,121 +93,164 @@ public class Project1cs360s2019 {
 			}
 		}
 
-		
 		/*
 		 * Returns the amount of animals in the same spot as a camera in the jungle
 		 */
 		public int animalScore() {
 			int out = 0;
-		    for(Entry<Point, Integer> e : animals.entrySet()) {
-		    	if(cameras.contains(e.getKey())) {
-		    		out += e.getValue();
-		    	}
-		    }
-		    return out;
+			for (Entry<Point, Integer> e : animals.entrySet()) {
+				if (cameras.contains(e.getKey())) {
+					out += e.getValue();
+				}
+			}
+			return out;
 		}
 
 		/*
 		 * Returns the amount of valid locations for a camera in the jungle
 		 */
 		public int numValidLocations() {
-			return size*size - invalidLocations.size();
+			return size * size - invalidLocations.size();
 		}
-		
+
 		/*
-		 * Returns a set with all valid locations
-		 * Should I do this or just keep another set of the valid locations?
-		 * The question is, do i call this method more, or addCamera more
+		 * Returns a set with all valid locations Should I do this or just keep another
+		 * set of the valid locations? The question is, do i call this method more, or
+		 * addCamera more
 		 */
 		public HashSet<Point> validLocations() {
 			HashSet<Point> out = new HashSet<Point>();
-			for(int i = 0;i<size;i++) {
-				for(int a =0;a<size;a++) {
+			for (int i = 0; i < size; i++) {
+				for (int a = 0; a < size; a++) {
 					Point p = new Point(i, a);
-					if(!invalidLocations.contains(p)) {
+					if (!invalidLocations.contains(p)) {
 						out.add(p);
 					}
 				}
 			}
+			out.removeAll(cameras);
 			return out;
 		}
-		
 
 		/*
-		 * Returns a String representing the jungle's state
-		 * P is picture, C is camera, A is animal(s), O is valid location, X is invalid location
-		 * a is animal(s) in invalid location
-		 * find better way to print that can handle mutliple animals in one loc
+		 * Puts c cameras on purely random spots
+		 * TODO: make it so first on random spots with animals, then on
+		 * random spots throughout not concerned with validity when placing
+		 */
+		public void randomlySetUpCameras(int c) {
+			Random r = new Random();
+			cameras.clear();
+			invalidLocations.clear();
+			while (cameras.size() < c) {
+				Point p = new Point(r.nextInt(size), r.nextInt(size));
+				while(cameras.contains(p)) {
+					p = new Point(r.nextInt(size), r.nextInt(size));
+				}
+				addCamera(p);
+			}
+//			ArrayList<Integer> rndCamIndexes = new ArrayList<Integer>(c);
+//			for (int i = 0; i < animals.size() && i < c; i++) {
+//				int rnd = r.nextInt() % animals.size();
+//				while (rndCamIndexes.contains(rnd)) {
+//					rnd = r.nextInt() % animals.size();
+//				}
+//				rndCamPos.add(rnd);
+//			}
+//			while (rndCamPos.size() < c) {
+//
+//				int rnd = r.nextInt() % animals.size();
+//				while (rndCamPos.contains(rnd)) {
+//					rnd = r.nextInt() % animals.size();
+//				}
+//				rndCamPos.add(rnd);
+//			}
+			
+		}
+
+		/*
+		 * Returns a String representing the jungle's state P is picture, C is camera, A
+		 * is animal(s), O is valid location, X is invalid location a is animal(s) in
+		 * invalid location find better way to print that can handle mutliple animals in
+		 * one loc
 		 */
 		public String toString() {
 			String out = "\nWelcome to the Jungle Baby\n";
-			
-			for(int i = 0;i<size;i++) {
-				for(int a =0;a<size;a++) {
+
+			for (int i = 0; i < size; i++) {
+				for (int a = 0; a < size; a++) {
 					Point p = new Point(i, a);
-					if(cameras.contains(p)) {
-						if(animals.containsKey(p)) {
-							out+=" P ";
-						}else {
-							out+=" C ";
+					if (cameras.contains(p)) {
+						if (animals.containsKey(p)) {
+							out += " P ";
+						} else {
+							out += " C ";
 						}
-					}else if(animals.containsKey(p)) {
-						if(invalidLocations.contains(p)) {
-							out+=" a ";
-						}else {
-							out+=" A ";
+					} else if (animals.containsKey(p)) {
+						if (invalidLocations.contains(p)) {
+							out += " a ";
+						} else {
+							out += " A ";
 						}
-					}else {
-						if(invalidLocations.contains(p)) {
-							out+=" X ";
-						}else {
-							out+=" O ";
+					} else {
+						if (invalidLocations.contains(p)) {
+							out += " X ";
+						} else {
+							out += " O ";
 						}
 					}
 				}
-				out+="\n";
+				out += "\n";
 			}
 
 //			for(Point p:invalidLocations) {
 //				out+="\n"+p.x+", "+p.y;
 //			}
-			return out+"\nAvailableSpaces: "+numValidLocations();
+			return out + "\nAvailableSpaces: " + numValidLocations();
 		}
 
 		@Override
 		public boolean equals(Object o) {
-		if (this == o)
+			if (this == o)
+				return true;
+			if (o == null)
+				return false;
+			if (getClass() != o.getClass())
+				return false;
+			Jungle other = (Jungle) o;
+			if (other.size != this.size) {
+				return false;
+			}
+			if (!other.animals.equals(this.animals)) {
+				return false;
+			}
+			if (!other.invalidLocations.equals(this.invalidLocations)) {
+				return false;
+			}
+			if (!other.cameras.equals(this.cameras)) {
+				return false;
+			}
 			return true;
-		if (o == null)
-			return false;
-		if (getClass() != o.getClass())
-			return false;
-		Jungle other = (Jungle) o;
-		if(other.size != this.size) {
-			return false;
 		}
-		if(!other.animals.equals(this.animals)) {
-			return false;
-		}
-		if(!other.invalidLocations.equals(this.invalidLocations)) {
-			return false;
-		}
-		if(!other.cameras.equals(this.cameras)) {
-			return false;
-		}
-		return true;
-	}
-
 
 		@Override
 		public int compareTo(Object o) {
-			if(equals(o)) {
+			if (equals(o)) {
 				return 0;
 			}
-			if(this.animalScore() <= ((Jungle)o).animalScore()) {
+			if (this.animalScore() <= ((Jungle) o).animalScore()) {
 				return -1;
 			}
 			return 1;
+		}
+
+		public boolean allCamerasValid() {
+			for(Point p: cameras) {
+				System.out.println(p);
+				if(invalidLocations.contains(p)) {
+					return false;
+				}
+			}
+			return true;
 		}
 	}
 
@@ -236,7 +282,7 @@ public class Project1cs360s2019 {
 				astar = false;
 			}
 			System.out.println(
-					"size: " + jungleSize + " - traps: " + numTraps + " - animals: " + numAnimals + " - " + alg);
+					"\nsize: " + jungleSize + " - traps: " + numTraps + " - animals: " + numAnimals + " - " + alg);
 
 			for (int i = 0; i < numAnimals; i++) {
 				String[] coordinate = sc.nextLine().split(",");
@@ -246,7 +292,7 @@ public class Project1cs360s2019 {
 				} else {
 					animals.put(point, 1);
 				}
-				System.out.println(point.x +", "+point.y+" ("+animals.get(point)+")");
+				// System.out.println(point.x +", "+point.y+" ("+animals.get(point)+")");
 			}
 		} catch (FileNotFoundException e) {
 			System.out.println("File Not found");
@@ -254,69 +300,118 @@ public class Project1cs360s2019 {
 			return -1;
 		}
 
-		Stack<Jungle> states = new Stack<Jungle>();
 		Jungle j = world.new Jungle(jungleSize, animals);
-		
-		//System.out.println(j.toString());
-		//j.addCamera(new Point(3,3));
-		//System.out.println(j.toString());
-		
-		states.push(j);
+
+		// System.out.println(j.toString());
+		// j.addCamera(new Point(3,3));
+		// System.out.println(j.toString());
 
 		int numImages = 0;
-		
-		if(astar) {
-			numImages = aStar(states, numTraps);
-		}else {
-			numImages = dfs(states, numTraps);
+
+		if (astar) {
+			numImages = dfs(j, numTraps);
+		} else {
+			numImages = dfs(j, numTraps);
 		}
 
-        int runtime = (int)((System.nanoTime() - start) / 1_000_000L);
-        System.out.println("Ran all test cases in: "+runtime+" milliseconds");
+		int runtime = (int) ((System.nanoTime() - start) / 1_000_000L);
+		System.out.println("Simulated jungle in: " + runtime + " milliseconds");
 		return numImages;
 	}
 
-	public static int aStar(Stack<Jungle> states, int numTraps) {
-		return 0;
-	}
-	
 	/*
-	 * Runs dfs on the stack on states given for the given number of cameras/traps
+	 * Runs A* on the given initial jungle state, given for the given number of
+	 * cameras/traps
 	 */
-	public static int dfs(Stack<Jungle> states, int numTraps) {
+	public static int aStar(Jungle initialJungle, int numTraps) {
 		int out = -1;
-		
+
+		Queue<Jungle> states = new PriorityQueue<>(); // may need to be reverse order since I'm maximizing score
+//		Queue<Jungle> states = new PriorityQueue<>(Collections.reverseOrder());
 		Set<Jungle> attempts = new HashSet<Jungle>();
+		initialJungle.randomlySetUpCameras(numTraps);
+		System.out.println(initialJungle);
+		System.out.println(initialJungle.allCamerasValid());
 		
-		while(!states.isEmpty()) {
-			
-			Jungle jungle = states.pop();
-			
-			System.out.println(jungle);
-			
-			if(!attempts.add(jungle)) {
-				continue; //if I've already tried this jungle state, don't try again
+		states.add(initialJungle);
+
+		while (false && !states.isEmpty()) {
+
+			Jungle jungle = states.remove();
+
+			if (!attempts.add(jungle)) {
+				continue; // if I've already tried this jungle state, don't try again
 			}
+
+			//System.out.println(jungle);
+//			System.out.println(jungle.allCamerasValid());
 			
-//			if(jungle.numValidLocations() == 0) {
-//				System.out.println("All locations invalid");
-//				System.out.println("Cameras placed: "+jungle.cameras.size());
-//				if(jungle.cameras.size() == numTraps) {
-//					return jungle.animalScore();
-//				}else {
-//					continue; //if theres no more valid locations in this jungle, don't/can't make children out of it
-//				}
-//			}
-			
-			if(jungle.cameras.size() == numTraps) {
+			// goal state check
+			if (jungle.allCamerasValid() && jungle.cameras.size() == numTraps) {
 				System.out.println("All cameras placed");
 				System.out.println("Score: "+jungle.animalScore());
 				out = Math.max(out, jungle.animalScore());
 				continue;
 			}
-			
+
+			// attempts to add children states to queue equal to the number of cameras
+			// checks and tries to fix a camera in each state, if it is invalid
+			for (int i=0;i<numTraps;i++) {
+				Jungle childJungle = world.new Jungle(jungle.size, jungle.animals);
+				childJungle.cameras.addAll(jungle.cameras);
+				childJungle.invalidLocations.addAll(jungle.invalidLocations);
+				
+				for(Point p:jungle.cameras) {
+					if(childJungle.invalidLocations.contains(p)) {
+						childJungle.removeCamera(p);
+						for(int a=0;a<childJungle.size;a++) {
+							Point newPoint = new Point(p.x, a);
+							if(!childJungle.invalidLocations.contains(newPoint)) {
+								childJungle.addCamera(newPoint);
+								break;
+							}
+						}
+					}
+				}
+				
+				states.add(childJungle);
+			}
+
+		}
+
+		return out;
+	}
+
+	/*
+	 * Runs dfs on the given initial jungle state, given for the given number of
+	 * cameras/traps
+	 */
+	public static int dfs(Jungle initialJungle, int numTraps) {
+		int out = -1;
+
+		Stack<Jungle> states = new Stack<>();
+		states.push(initialJungle);
+		Set<Jungle> attempts = new HashSet<Jungle>();
+
+		while (!states.isEmpty()) {
+
+			Jungle jungle = states.pop();
+
+			// System.out.println(jungle);
+
+			if (!attempts.add(jungle)) {
+				continue; // if I've already tried this jungle state, don't try again
+			}
+
+			if (jungle.cameras.size() == numTraps) {
+				// System.out.println("All cameras placed");
+				// System.out.println("Score: "+jungle.animalScore());
+				out = Math.max(out, jungle.animalScore());
+				continue;
+			}
+
 			// if there are more valid locations, explore each one
-			for(Point p:jungle.validLocations()) {
+			for (Point p : jungle.validLocations()) {
 				Jungle childJungle = world.new Jungle(jungle.size, jungle.animals);
 				childJungle.cameras.addAll(jungle.cameras);
 				childJungle.invalidLocations.addAll(jungle.invalidLocations);
@@ -324,7 +419,7 @@ public class Project1cs360s2019 {
 				states.push(childJungle);
 			}
 		}
-		
+
 		return out;
 	}
 
