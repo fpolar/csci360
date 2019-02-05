@@ -5,9 +5,13 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class Project1cs360s2019 {
+	
+	static Project1cs360s2019 world = new Project1cs360s2019();
+	
 	public static void main(String[] args) {
 		int i = 0;
-		checkResult(simulateJungle("input" + i + ".txt"), i);
+		for(;i<3;i++)
+			checkResult(simulateJungle("input" + i + ".txt"), i);
 	}
 
 	public class Jungle implements Comparable{
@@ -105,6 +109,24 @@ public class Project1cs360s2019 {
 		 */
 		public int numValidLocations() {
 			return size*size - invalidLocations.size();
+		}
+		
+		/*
+		 * Returns a set with all valid locations
+		 * Should I do this or just keep another set of the valid locations?
+		 * The question is, do i call this method more, or addCamera more
+		 */
+		public HashSet<Point> validLocations() {
+			HashSet<Point> out = new HashSet<Point>();
+			for(int i = 0;i<size;i++) {
+				for(int a =0;a<size;a++) {
+					Point p = new Point(i, a);
+					if(!invalidLocations.contains(p)) {
+						out.add(p);
+					}
+				}
+			}
+			return out;
 		}
 		
 
@@ -233,19 +255,18 @@ public class Project1cs360s2019 {
 		}
 
 		Stack<Jungle> states = new Stack<Jungle>();
-		Project1cs360s2019 pp = new Project1cs360s2019();
-		Jungle j = pp.new Jungle(jungleSize, animals);
+		Jungle j = world.new Jungle(jungleSize, animals);
 		
-		System.out.println(j.toString());
-		j.addCamera(new Point(3,3));
-		System.out.println(j.toString());
+		//System.out.println(j.toString());
+		//j.addCamera(new Point(3,3));
+		//System.out.println(j.toString());
 		
 		states.push(j);
 
 		int numImages = 0;
 		
 		if(astar) {
-			numImages = aStar(states, numTraps);
+			numImages = astar(states, numTraps);
 		}else {
 			numImages = dfs(states, numTraps);
 		}
@@ -258,9 +279,10 @@ public class Project1cs360s2019 {
 	}
 	
 	/*
-	 * Runs dfs with backtracking on the stack on states given for the given number of cameras/traps
+	 * Runs dfs on the stack on states given for the given number of cameras/traps
 	 */
 	public static int dfs(Stack<Jungle> states, int numTraps) {
+		int out = -1;
 		
 		Set<Jungle> attempts = new HashSet<Jungle>();
 		
@@ -274,19 +296,34 @@ public class Project1cs360s2019 {
 				continue; //if I've already tried this jungle state, don't try again
 			}
 			
-			if(jungle.numValidLocations() == 0) {
-				if(jungle.cameras.size() == numTraps) {
-					return jungle.animalScore();
-				}else {
-					continue; //if theres no more valid locations in this jungle, don't/can't make children out of it
-				}
+//			if(jungle.numValidLocations() == 0) {
+//				System.out.println("All locations invalid");
+//				System.out.println("Cameras placed: "+jungle.cameras.size());
+//				if(jungle.cameras.size() == numTraps) {
+//					return jungle.animalScore();
+//				}else {
+//					continue; //if theres no more valid locations in this jungle, don't/can't make children out of it
+//				}
+//			}
+			
+			if(jungle.cameras.size() == numTraps) {
+				System.out.println("All cameras placed");
+				System.out.println("Score: "+jungle.animalScore());
+				out = Math.max(out, jungle.animalScore());
+				continue;
 			}
 			
-			// if there are more valid locations
+			// if there are more valid locations, explore each one
+			for(Point p:jungle.validLocations()) {
+				Jungle childJungle = world.new Jungle(jungle.size, jungle.animals);
+				childJungle.cameras.addAll(jungle.cameras);
+				childJungle.invalidLocations.addAll(jungle.invalidLocations);
+				childJungle.addCamera(p);
+				states.push(childJungle);
+			}
 		}
 		
-		
-		return 0;
+		return out;
 	}
 
 	/*
@@ -301,7 +338,7 @@ public class Project1cs360s2019 {
 		try {
 			Scanner sc = new Scanner(file);
 			int correct = sc.nextInt();
-			System.out.println("Current: " + result + " - Expected: " + correct);
+			System.out.println("\nCurrent: " + result + " - Expected: " + correct);
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
