@@ -1,20 +1,25 @@
 import java.awt.Point;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 import java.util.Map.Entry;
 
-public class Project1cs360s2019 {
+public class project1cs360s2019 {
 
-	static Project1cs360s2019 world = new Project1cs360s2019();
-	static boolean debugAStar = false;
+	static project1cs360s2019 world = new project1cs360s2019();
+	static boolean debugSim = true;
+	static boolean debugAStar = true;
+	static boolean debugAttempts = false;
 	static boolean debugAddCam = false;
 	static boolean debugRemoveCam = false;
 
 	public static void main(String[] args) {
-		int i = 0;
-		for (; i < 3; i++)
-			checkResult(simulateJungle("input" + i + ".txt"), i);
+		for (int i = 0; i < 3; i++) checkResult(simulateJungle("input" + i + ".txt"), i);
+//		simulateJungle("submission");
 	}
 
 	public class Jungle implements Comparable {
@@ -280,8 +285,12 @@ public class Project1cs360s2019 {
 	 */
 
 	public static int simulateJungle(String inputFileName) {
-		File file = new File(
-				"C:\\Users\\theon\\OneDrive\\Documents\\Git\\csci360\\P1_Camera_Traps\\src\\inputs\\" + inputFileName);
+
+		File file = new File("input.txt");
+		if (!inputFileName.equals("submission")) {
+			file = new File("C:\\Users\\theon\\OneDrive\\Documents\\Git\\csci360\\P1_Camera_Traps\\src\\inputs\\"
+					+ inputFileName);
+		}
 
 		int jungleSize = -1;
 		int numTraps = -1;
@@ -302,8 +311,9 @@ public class Project1cs360s2019 {
 			if (alg.equals("dfs")) {
 				astar = false;
 			}
-			System.out.println(
-					"\nsize: " + jungleSize + " - traps: " + numTraps + " - animals: " + numAnimals + " - " + alg);
+			if (debugSim)
+				System.out.println(
+						"\nsize: " + jungleSize + " - traps: " + numTraps + " - animals: " + numAnimals + " - " + alg);
 
 			for (int i = 0; i < numAnimals; i++) {
 				String[] coordinate = sc.nextLine().split(",");
@@ -315,7 +325,8 @@ public class Project1cs360s2019 {
 				}
 			}
 		} catch (FileNotFoundException e) {
-			System.out.println("File Not found");
+			if (debugSim)
+				System.out.println("Input File Not found");
 			e.printStackTrace();
 			return -1;
 		}
@@ -327,11 +338,23 @@ public class Project1cs360s2019 {
 		if (astar) {
 			numImages = aStar(j, numTraps);
 		} else {
-			numImages = aStar(j, numTraps);
+			numImages = dfs(j, numTraps);
 		}
 
 		int runtime = (int) ((System.nanoTime() - start) / 1_000_000L);
-		System.out.println("Simulated jungle in: " + runtime + " milliseconds");
+		if (debugSim)
+			System.out.println("Simulated jungle in: " + runtime + " milliseconds");
+
+		FileWriter fw;
+		try {
+			fw = new FileWriter("output.txt");
+			PrintWriter pw = new PrintWriter(fw);
+			pw.print(numImages);
+			pw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		return numImages;
 	}
 
@@ -357,7 +380,7 @@ public class Project1cs360s2019 {
 
 			if (debugAStar)
 				System.out.println(jungle);
-			if (debugAStar)
+			if (debugAttempts)
 				System.out.println("attempts: " + attempts);
 			if (jungle.cameras.size() > numTraps) {
 				continue; // an error occurs where it adds one too many cameras, will fix later
@@ -410,6 +433,7 @@ public class Project1cs360s2019 {
 								childJungle.addCamera(animalPoint);
 								if (debugAStar)
 									System.out.println("added safe picture: " + animalPoint + "\n" + childJungle);
+								break;
 							}
 						}
 					}
@@ -433,9 +457,9 @@ public class Project1cs360s2019 {
 									}
 								}
 							}
-						}else {
+						} else {
 							Point point = new Point(r.nextInt(childJungle.size), r.nextInt(childJungle.size));
-							while(childJungle.invalidLocations.contains(point)) {
+							while (childJungle.invalidLocations.contains(point)) {
 								point = new Point(r.nextInt(childJungle.size), r.nextInt(childJungle.size));
 							}
 							childJungle.addCamera(point);
