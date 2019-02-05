@@ -236,7 +236,7 @@ public class Project1cs360s2019 {
 				astar = false;
 			}
 			System.out.println(
-					"size: " + jungleSize + " - traps: " + numTraps + " - animals:" + numAnimals + " - " + alg);
+					"size: " + jungleSize + " - traps: " + numTraps + " - animals: " + numAnimals + " - " + alg);
 
 			for (int i = 0; i < numAnimals; i++) {
 				String[] coordinate = sc.nextLine().split(",");
@@ -266,11 +266,13 @@ public class Project1cs360s2019 {
 		int numImages = 0;
 		
 		if(astar) {
-			numImages = astar(states, numTraps);
+			numImages = aStar(states, numTraps);
 		}else {
 			numImages = dfs(states, numTraps);
 		}
 
+        int runtime = (int)((System.nanoTime() - start) / 1_000_000L);
+        System.out.println("Ran all test cases in: "+runtime+" milliseconds");
 		return numImages;
 	}
 
