@@ -14,13 +14,14 @@ public class project1cs360s2019 {
 	static boolean debugSim = false;
 	static boolean debugAStar = false;
 	static boolean debugAttempts = false;
-	static boolean debugQueue = false;
+	static boolean debugQueue = true;
 	static boolean debugAddCam = false;
 	static boolean debugRemoveCam = false;
 	static boolean debugCompareTo = false;
 
 	public static void main(String[] args) {
 		for (int i = 0; i < 3; i++)
+//		int i = 1;
 			checkResult(simulateJungle("input" + i + ".txt"), i);
 //		simulateJungle("submission");
 	}
@@ -159,6 +160,13 @@ public class project1cs360s2019 {
 		}
 
 		/*
+		 * Returns the amount of cameras not on animals
+		 */
+		public int numUnusedCameras() {
+			return cameras.size()-animalScore();
+		}
+
+		/*
 		 * Returns a set with all valid locations Should I do this or just keep another
 		 * set of the valid locations? The question is, do i call this method more, or
 		 * addCamera more
@@ -209,7 +217,7 @@ public class project1cs360s2019 {
 			while (newCams.size() > 0 && cameras.size() < c) {
 				int i = r.nextInt(newCams.size());
 				Point newCam = newCams.get(i);
-				if (r.nextInt(10)<8) {
+				if (!cameras.contains(newCam) && r.nextInt(10) < 8) {
 					addCamera(newCam);
 				}
 				newCams.remove(i);
@@ -334,7 +342,10 @@ public class project1cs360s2019 {
 			if (equals(o)) {
 				return 0;
 			}
-			if (this.animalScore() - this.cameraCost() <= ((Jungle) o).animalScore() - ((Jungle) o).cameraCost()) {
+//			if (this.animalScore() - this.cameraCost() <= ((Jungle) o).animalScore() - ((Jungle) o).cameraCost()) {
+//				return -1;
+//			}
+			if (this.numUnusedCameras() <= ((Jungle) o).numUnusedCameras()) {
 				return -1;
 			}
 			return 1;
@@ -440,8 +451,8 @@ public class project1cs360s2019 {
 																				// I'm maximizing score
 		Set<Jungle> attempts = new HashSet<Jungle>();
 //		initialJungle.randomlySetUpCameras(numTraps);
-//		initialJungle.SetUpCamerasOnAnimals(numTraps);
-		initialJungle.SetUpCamerasOnAnimalsAvoidConflicts(numTraps);
+		initialJungle.SetUpCamerasOnAnimals(numTraps);
+//		initialJungle.SetUpCamerasOnAnimalsAvoidConflicts(numTraps);
 		System.out.println(initialJungle);
 		System.out.println(initialJungle.allCamerasValid());
 
@@ -473,7 +484,7 @@ public class project1cs360s2019 {
 			// goal state check
 			if (jungle.allCamerasValid() && jungle.cameras.size() == numTraps) {
 				if (debugAStar) {
-					System.out.println("All cameras placed");
+					System.out.println("\nGOAL STATE");
 					System.out.println(jungle);
 					System.out.println("Score: " + jungle.animalScore());
 				}
@@ -490,10 +501,10 @@ public class project1cs360s2019 {
 			 * child for each as well
 			 */
 			for (int x = 0; x < 5; x++) {
+				Jungle childJungle = world.new Jungle(jungle.size, jungle.animals);
+				childJungle.cameras.addAll(jungle.cameras);
+				childJungle.invalidLocations.addAll(jungle.invalidLocations);
 				for (Point p : jungle.cameras) {
-					Jungle childJungle = world.new Jungle(jungle.size, jungle.animals);
-					childJungle.cameras.addAll(jungle.cameras);
-					childJungle.invalidLocations.addAll(jungle.invalidLocations);
 
 					if (debugAStar)
 						System.out.println(childJungle + "\nchecking camera: " + p);
@@ -505,23 +516,37 @@ public class project1cs360s2019 {
 						System.out.println("It's invalid");
 					childJungle.removeCamera(p);
 					boolean safeLocationFound = false;
-					for (int i = 0; i < childJungle.size; i++) {
-						Point newPoint = new Point(i, p.y);
-						if (!childJungle.invalidLocations.contains(newPoint)) {
-							safeLocationFound = true;
-							childJungle.addCamera(newPoint);
-						}
+					List<Integer> horMovement = Arrays.asList( 0, -1, 1 );
+					List<Integer> verMovement = new ArrayList<Integer>(horMovement);
+					int rShuffle = new Random(System.currentTimeMillis()).nextInt(3);
+					while(rShuffle>0) {
+						Collections.shuffle(horMovement);
+						Collections.shuffle(verMovement);
 					}
-
+					int a = 0;
+					int b = 0;
+					while (a < 3 && !safeLocationFound) {
+						while(b<3 && !safeLocationFound) {
+							Point newPoint = new Point(p.x+horMovement.get(a), p.y + verMovement.get(b));
+							if (!childJungle.invalidLocations.contains(newPoint) &&
+									!childJungle.cameras.contains(newPoint)) {
+								safeLocationFound = true;
+								childJungle.addCamera(newPoint);
+							}
+							b++;
+						}
+						a++;
+					}
 					if (!safeLocationFound) {
 						Random random = new Random(System.currentTimeMillis());
-						childJungle.addCamera(new Point(random.nextInt(childJungle.size), p.y));
+						childJungle.addCamera(
+								new Point(p.x -1 + random.nextInt(3), p.y -1 + random.nextInt(3)));
 					}
 
-					states.add(childJungle);
-
+					if (debugAStar)
+						System.out.println("pushing state: \n" + childJungle);
 				}
-
+				states.add(childJungle);
 			}
 		}
 
@@ -596,7 +621,8 @@ public class project1cs360s2019 {
 	public static void testPrioQueue(Queue<Jungle> states) {
 		Queue<Jungle> statesCopy = new PriorityQueue<>(states);
 		System.out.println("Printing Queue");
-		while (!statesCopy.isEmpty()) {
+		int limit = 2;
+		while (!statesCopy.isEmpty() && limit-->0) {
 			Jungle jungle = statesCopy.poll();
 			System.out.println(jungle + "\nscore: " + jungle.animalScore() + "\ncost: " + jungle.cameraCost());
 		}
