@@ -14,14 +14,13 @@ public class project1cs360s2019 {
 	static boolean debugSim = false;
 	static boolean debugAStar = false;
 	static boolean debugAttempts = false;
-	static boolean debugQueue = true;
+	static boolean debugQueue = false;
 	static boolean debugAddCam = false;
 	static boolean debugRemoveCam = false;
 	static boolean debugCompareTo = false;
 
 	public static void main(String[] args) {
 		for (int i = 0; i < 3; i++)
-//		int i = 1;
 			checkResult(simulateJungle("input" + i + ".txt"), i);
 //		simulateJungle("submission");
 	}
@@ -156,14 +155,14 @@ public class project1cs360s2019 {
 		 * Returns the amount of valid locations for a camera in the jungle
 		 */
 		public int numValidLocations() {
-			return size * size - invalidLocations.size();
+			return size * size - invalidLocations.size() - cameras.size();
 		}
 
 		/*
 		 * Returns the amount of cameras not on animals
 		 */
 		public int numUnusedCameras() {
-			return cameras.size()-animalScore();
+			return cameras.size() - animalScore();
 		}
 
 		/*
@@ -336,16 +335,10 @@ public class project1cs360s2019 {
 		 */
 		@Override
 		public int compareTo(Object o) {
-			if (debugCompareTo)
-				System.out.println("this f: " + (this.animalScore() - this.cameraCost()) + "other f: "
-						+ (((Jungle) o).animalScore() - ((Jungle) o).cameraCost()));
 			if (equals(o)) {
 				return 0;
 			}
-//			if (this.animalScore() - this.cameraCost() <= ((Jungle) o).animalScore() - ((Jungle) o).cameraCost()) {
-//				return -1;
-//			}
-			if (this.numUnusedCameras() <= ((Jungle) o).numUnusedCameras()) {
+			if (cameras.size() + this.animalScore() <= ((Jungle) o).cameras.size() + ((Jungle) o).animalScore()) {
 				return -1;
 			}
 			return 1;
@@ -446,31 +439,27 @@ public class project1cs360s2019 {
 	public static int aStar(Jungle initialJungle, int numTraps) {
 		int out = -1;
 
-//		Queue<Jungle> states = new PriorityQueue<>(); // may need to be reverse order since I'm maximizing score
-		Queue<Jungle> states = new PriorityQueue<>(Collections.reverseOrder()); // may need to be reverse order since
-																				// I'm maximizing score
+		Queue<Jungle> states = new PriorityQueue<>(); // may need to be reverse order since I'm maximizing score
 		Set<Jungle> attempts = new HashSet<Jungle>();
 //		initialJungle.randomlySetUpCameras(numTraps);
-		initialJungle.SetUpCamerasOnAnimals(numTraps);
+//		initialJungle.SetUpCamerasOnAnimals(numTraps);
 //		initialJungle.SetUpCamerasOnAnimalsAvoidConflicts(numTraps);
-		System.out.println(initialJungle);
-		System.out.println(initialJungle.allCamerasValid());
+		if(debugAStar) System.out.println(initialJungle);
 
 		states.add(initialJungle);
 
-		while (true && !states.isEmpty()) {
+		while (!states.isEmpty()) {
 
 			Jungle jungle = states.remove();
 
-			if (debugAStar)
+			if (debugAStar) {
 				System.out.println(jungle);
+				System.out.println(jungle);
+			}
 			if (debugAttempts)
 				System.out.println("attempts: " + attempts);
 			if (debugQueue) {
 				testPrioQueue(states);
-			}
-			if (jungle.cameras.size() > numTraps) {
-				continue; // an error occurs where it adds one too many cameras, will fix later
 			}
 
 			// checks for duplicate
@@ -478,11 +467,8 @@ public class project1cs360s2019 {
 				continue; // if I've already tried this jungle state, don't try again
 			}
 
-			if (debugAStar)
-				System.out.println(jungle.allCamerasValid() + " " + jungle.cameras.size() + " == " + numTraps);
-
 			// goal state check
-			if (jungle.allCamerasValid() && jungle.cameras.size() == numTraps) {
+			if (jungle.cameras.size() == numTraps) {
 				if (debugAStar) {
 					System.out.println("\nGOAL STATE");
 					System.out.println(jungle);
@@ -496,60 +482,35 @@ public class project1cs360s2019 {
 				System.out.println("Finding Children");
 
 			/*
-			 * Check every camera If it's invalid, remove it and add another - 1 child for
-			 * each time this happens If theres no invalid cameras, move a random one - 1
-			 * child for each as well
+			 * If there are still cameras left add to an animal's location if possible if
+			 * not, add to another valid location if neither is possible, break and make no
+			 * more children
+			 * 
 			 */
-			for (int x = 0; x < 5; x++) {
-				Jungle childJungle = world.new Jungle(jungle.size, jungle.animals);
-				childJungle.cameras.addAll(jungle.cameras);
-				childJungle.invalidLocations.addAll(jungle.invalidLocations);
-				for (Point p : jungle.cameras) {
-
-					if (debugAStar)
-						System.out.println(childJungle + "\nchecking camera: " + p);
+			for (int i = 0; i < 15; i++) {
+				for (Point p : jungle.animals.keySet()) {
+					Jungle childJungle = world.new Jungle(jungle.size, jungle.animals);
+					childJungle.cameras.addAll(jungle.cameras);
+					childJungle.invalidLocations.addAll(jungle.invalidLocations);
 					if (!childJungle.invalidLocations.contains(p)) {
-						continue;
-					}
-
-					if (debugAStar)
-						System.out.println("It's invalid");
-					childJungle.removeCamera(p);
-					boolean safeLocationFound = false;
-					List<Integer> horMovement = Arrays.asList( 0, -1, 1 );
-					List<Integer> verMovement = new ArrayList<Integer>(horMovement);
-					int rShuffle = new Random(System.currentTimeMillis()).nextInt(3);
-					while(rShuffle>0) {
-						Collections.shuffle(horMovement);
-						Collections.shuffle(verMovement);
-					}
-					int a = 0;
-					int b = 0;
-					while (a < 3 && !safeLocationFound) {
-						while(b<3 && !safeLocationFound) {
-							Point newPoint = new Point(p.x+horMovement.get(a), p.y + verMovement.get(b));
-							if (!childJungle.invalidLocations.contains(newPoint) &&
-									!childJungle.cameras.contains(newPoint)) {
-								safeLocationFound = true;
-								childJungle.addCamera(newPoint);
-							}
-							b++;
+						if (debugAStar)
+							System.out.println("PLACING CAMERA ON ANIMAL");
+						childJungle.addCamera(p);
+					} else {
+						if (debugAStar)
+							System.out.println("PLACING CAMERA ON RANDOMLY");
+						Random r = new Random(System.currentTimeMillis());
+						Point c = new Point(r.nextInt(childJungle.size), r.nextInt(childJungle.size));
+						while (childJungle.invalidLocations.contains(c)) {
+							c = new Point(r.nextInt(childJungle.size), r.nextInt(childJungle.size));
 						}
-						a++;
+						childJungle.addCamera(c);
 					}
-					if (!safeLocationFound) {
-						Random random = new Random(System.currentTimeMillis());
-						childJungle.addCamera(
-								new Point(p.x -1 + random.nextInt(3), p.y -1 + random.nextInt(3)));
-					}
-
-					if (debugAStar)
-						System.out.println("pushing state: \n" + childJungle);
+					states.add(childJungle);
 				}
-				states.add(childJungle);
+
 			}
 		}
-
 		if (debugAStar)
 			System.out.println("ASTAR COMPLETE: " + states.size() + "\n" + states.isEmpty());
 		return out;
@@ -622,9 +583,10 @@ public class project1cs360s2019 {
 		Queue<Jungle> statesCopy = new PriorityQueue<>(states);
 		System.out.println("Printing Queue");
 		int limit = 2;
-		while (!statesCopy.isEmpty() && limit-->0) {
+		while (!statesCopy.isEmpty() && limit-- > 0) {
 			Jungle jungle = statesCopy.poll();
-			System.out.println(jungle + "\nscore: " + jungle.animalScore() + "\ncost: " + jungle.cameraCost());
+			System.out.println(jungle + "\nscore: " + jungle.animalScore() + "\ncameras: " + jungle.cameras.size()
+					+ "\nopen spots: " + jungle.numValidLocations());
 		}
 		System.out.println("Done printing Queue");
 	}
