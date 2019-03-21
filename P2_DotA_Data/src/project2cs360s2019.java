@@ -4,8 +4,10 @@ import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Scanner;
 
+import models.DraftState;
 import models.Hero;
 
 public class project2cs360s2019 {
@@ -15,6 +17,7 @@ public class project2cs360s2019 {
 	static HashMap<Integer, Hero> heroes;
 	
 	static boolean debug_in = false;
+	static boolean debug_drafting = true;
 	
 	public static void main(String[] args) {
 		readInput("input0.txt");
@@ -22,6 +25,10 @@ public class project2cs360s2019 {
 	}
 	
 	public static void simulateDraft() {
+		DraftState root = new DraftState(heroes);
+		root.createSuccessors(heroes);
+		printHeroes(heroes);
+		if(debug_drafting) printStates(root.getSuccessors());
 	}
 	
 	public static void readInput(String inputFileName) {
@@ -56,16 +63,24 @@ public class project2cs360s2019 {
 		}
 		
 		if(debug_in)
-			printMap(heroes);
+			printHeroes(heroes);
 
 	}
-	
-	public static void printMap(Map mp) {
-	    Iterator it = mp.entrySet().iterator();
+
+	public static void printHeroes(HashMap<Integer, Hero> mp) {
+	    Iterator<Entry<Integer, Hero>> it = mp.entrySet().iterator();
 	    while (it.hasNext()) {
-	        Map.Entry pair = (Map.Entry)it.next();
+	        Map.Entry<Integer, Hero> pair = (Map.Entry<Integer, Hero>)it.next();
 	        System.out.println(pair.getKey() +""+ pair.getValue());
-	        it.remove();
+	        //it.remove();
+	    }
+	}
+	public static void printStates(Map<Double, DraftState> mp) {
+	    Iterator<Entry<Double, DraftState>> it = mp.entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry<Double, DraftState> pair = (Map.Entry<Double, DraftState>)it.next();
+	        System.out.println(pair.getValue());
+	        //it.remove();
 	    }
 	}
 }
