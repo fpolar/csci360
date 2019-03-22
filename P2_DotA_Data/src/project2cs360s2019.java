@@ -1,10 +1,14 @@
 import java.awt.Point;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Map.Entry;
+import java.util.PriorityQueue;
 import java.util.Scanner;
 
 import models.DraftState;
@@ -17,18 +21,36 @@ public class project2cs360s2019 {
 	static HashMap<Integer, Hero> heroes;
 	
 	static boolean debug_in = false;
-	static boolean debug_drafting = true;
+	static boolean debug_drafting = false;
 	
 	public static void main(String[] args) {
-		readInput("input0.txt");
-		simulateDraft();
+		long s = System.currentTimeMillis();
+		for(int test_num=0;test_num<1;test_num++) {
+			long start = System.currentTimeMillis();
+			readInput("input"+test_num+".txt");
+			simulateDraft();
+			System.out.println(test_num+" - Runtime: "+(System.currentTimeMillis()-start)/1000 + " Seconds");
+		}
+		System.out.println("Total Runtime: "+(System.currentTimeMillis()-s)/1000 + " Seconds");
 	}
 	
 	public static void simulateDraft() {
 		DraftState root = new DraftState(heroes);
+		if (debug_in) printHeroes(heroes);
+		
 		root.createSuccessors(heroes);
-		printHeroes(heroes);
 		if(debug_drafting) printStates(root.getSuccessors());
+		
+		Queue<DraftState> drafts = new PriorityQueue<DraftState>(new AdvantageComparator());
+		drafts.addAll(root.getSuccessors().values());
+		while(!drafts.isEmpty()) {
+			DraftState currDraftRound = drafts.poll();
+			if(!currDraftRound.draftOver()) {
+				currDraftRound.createSuccessors(heroes);
+				drafts.addAll(currDraftRound.getSuccessors().values());
+			}
+		}
+		if(debug_drafting) System.out.println("Done Drafting");
 	}
 	
 	public static void readInput(String inputFileName) {
@@ -83,4 +105,16 @@ public class project2cs360s2019 {
 	        //it.remove();
 	    }
 	}
+}
+
+class AdvantageComparator implements Comparator<DraftState>{ 
+    public int compare(DraftState d1, DraftState d2) { 
+        if (d1.getAdvantage() < d2.getAdvantage()) {
+            return 1; 
+        }
+        else if (d1.getAdvantage() > d2.getAdvantage()) {
+            return -1; 
+        }
+                        return 0; 
+        } 
 }

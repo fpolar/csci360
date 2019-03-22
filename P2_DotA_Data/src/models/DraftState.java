@@ -9,30 +9,37 @@ import java.util.Map.Entry;
 
 public class DraftState {
 	double advantage;
+	double minimax_val;
 	boolean player_turn;
-	//HashMap<Integer, Integer> hero_tates;
+	//HashMap<Integer, Integer> hero_states;
 	HashMap<Integer, Hero> player_heroes;
 	HashMap<Integer, Hero> opponent_heroes;
 	SortedMap<Double, DraftState> successors;
+
+	//The id of the most recent hero drafted
+	int last_draft = -1;
 	
 	public DraftState(HashMap<Integer, Hero> heroes) {
 
+		player_turn = true;
 		player_heroes = new HashMap<Integer, Hero>();
 		opponent_heroes = new HashMap<Integer, Hero>();
 
 	    Iterator<Entry<Integer, Hero>> it = heroes.entrySet().iterator();
 	    while (it.hasNext()) {
 	        Map.Entry<Integer, Hero> pair = (Map.Entry<Integer, Hero>)it.next();
+//	    	System.out.println("Draft State Constructor: "+pair.getKey()+" - Mem: "+pair.getValue().membership);
 	        if(pair.getValue().membership == 1) {
 	        	player_heroes.put(pair.getKey(), pair.getValue());
 	        }
 	        if(pair.getValue().membership == 2) {
 	        	opponent_heroes.put(pair.getKey(), pair.getValue());
 	        }
+//		    System.out.println(player_heroes.size());
+//		    System.out.println(opponent_heroes.size());
 	        //it.remove();
 	    }
 	}
-
 
 	// constructor for cloning
 	public DraftState() {
@@ -45,15 +52,17 @@ public class DraftState {
 		String out = "Draft State: advantage = "+advantage+", my turn = "+player_turn;
 		out+= "\n\tPlayer Heroes: \n";
 	    Iterator<Entry<Integer, Hero>> it = player_heroes.entrySet().iterator();
+//	    System.out.println(player_heroes.size());
 	    while (it.hasNext()) {
 	        Map.Entry<Integer, Hero> pair = (Map.Entry<Integer, Hero>)it.next();
-	        out+="\n\tHero "+pair.getKey()+pair.getValue();
+	        out+="\n\tHero "+pair.getKey()+" "+pair.getValue();
 	    }
-		out+= "\tOpponent Heroes: \n";
-	    it = opponent_heroes.entrySet().iterator();
-	    while (it.hasNext()) {
-	        Map.Entry<Integer, Hero> pair = (Map.Entry<Integer, Hero>)it.next();
-	        out+="\n\tHero "+pair.getKey()+pair.getValue();
+		out+= "\n\n\tOpponent Heroes: \n";
+		Iterator<Entry<Integer, Hero>> it2 = opponent_heroes.entrySet().iterator();
+//	    System.out.println(opponent_heroes.size());
+	    while (it2.hasNext()) {
+	        Map.Entry<Integer, Hero> pair = (Map.Entry<Integer, Hero>)it2.next();
+	        out+="\n\tHero "+pair.getKey()+" "+pair.getValue();
 	    }
 	    return out;
 	}
@@ -64,6 +73,8 @@ public class DraftState {
 		tempDraftState.player_turn = player_turn;
 		tempDraftState.player_heroes.putAll(player_heroes);
 		tempDraftState.opponent_heroes.putAll(opponent_heroes);
+//	    System.out.println("Cloning:\n"+tempDraftState.player_heroes.size());
+//	    System.out.println(tempDraftState.opponent_heroes.size());
 		return tempDraftState;
 	}
 	
@@ -84,7 +95,7 @@ public class DraftState {
 	        Hero hero = pair.getValue();
 	        player_advantage += hero.power*hero.mastery_player;
 	        synergy[id%10-1] = true;
-	        it.remove();
+	        //it.remove();
 	    }
 	    if(synergy[0]&&synergy[1]&&synergy[2]&&synergy[3]&&synergy[4]) {
 	    	player_advantage+=120;
@@ -98,7 +109,7 @@ public class DraftState {
 	        Hero hero = pair.getValue();
 	        opponent_advantage += hero.power*hero.mastery_player;
 	        synergy[id%10-1] = true;
-	        it.remove();
+	        //it.remove();
 	    }
 	    if(synergy[0]&&synergy[1]&&synergy[2]&&synergy[3]&&synergy[4]) {
 	    	opponent_advantage+=120;
@@ -120,7 +131,10 @@ public class DraftState {
 			}
 			opponent_heroes.put(h, hero);
 		}
+//	    System.out.println("Cloning:\n"+tempDraftState.player_heroes.size());
+//	    System.out.println(tempDraftState.opponent_heroes.size());
 		player_turn = !player_turn;
+		last_draft = h;
 		calcAdvantage();
 		return true;
 	}
@@ -137,6 +151,7 @@ public class DraftState {
 	        
         	DraftState tempDraftState = cloneState();
         	if(tempDraftState.draftHero(id, hero)) {
+        		tempDraftState.setLast_draft(id);
         		successors.put(tempDraftState.advantage, tempDraftState);
         	}
 	        //it.remove();
@@ -144,6 +159,13 @@ public class DraftState {
 	}
 
 
+    public boolean draftOver() {
+    	if (player_heroes.size() == 5 && opponent_heroes.size() == 5) {
+    		return true;
+    	}
+    	return false;
+    }
+       
 	public double getAdvantage() {
 		return advantage;
 	}
@@ -191,6 +213,22 @@ public class DraftState {
 
 	public void setSuccessors(SortedMap<Double, DraftState> successors) {
 		this.successors = successors;
+	}
+
+	public int getLast_draft() {
+		return last_draft;
+	}
+
+	public void setLast_draft(int last_draft) {
+		this.last_draft = last_draft;
+	}
+
+	public double getMinimax_val() {
+		return minimax_val;
+	}
+
+	public void setMinimax_val(double minimax_val) {
+		this.minimax_val = minimax_val;
 	}
 	
 }
