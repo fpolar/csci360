@@ -3,7 +3,10 @@ import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Scanner;
 import java.util.TreeMap;
 
@@ -13,7 +16,7 @@ public class project3cs360s2019 {
 	public static boolean testing = true;
 	public static boolean debug_in = true;
 	public static boolean debug_sim = true;
-	
+	public static boolean debug_setup = true;
 	
 	public static int grid_size;
 	public static int num_obstacles;
@@ -22,6 +25,10 @@ public class project3cs360s2019 {
 	
 	public static double[][] values;
 	public static String[][] policies;
+	
+	public static double prob_correct_move = .7;
+	public static double gamma = .9;
+	public static double epsilon = .1;
 	
 	public static void main(String[] args) {
 		readInput("input-0.txt");
@@ -32,25 +39,40 @@ public class project3cs360s2019 {
 		values = new double[grid_size][grid_size];
 		policies = new String[grid_size][grid_size];
 		
+		//filling values with V0 of -1, since movement costs 1
+		for(double[] vals: values) Arrays.fill(vals, -1);
+		for(String[] policy_row: policies) Arrays.fill(policy_row, "x");
+		
+		//goal state is 100 - 1 for movement cost, 99
 		values[destination.getKey()][destination.getValue()] = 99;
 		policies[destination.getKey()][destination.getValue()] = ".";
 		
+		setObstacleValues();
+		
+		if(debug_setup) {
+			printValues();
+			printPolicies();
+		}
+		
 		evaluateNeighbors(destination);
 		
-		if(debug_sim) {
+		if(debug_sim){
+			printValues();
 			printPolicies();
-		writePolicies();
 		}
+		writePolicies();
 	}
 
 	public static void evaluateNeighbors(Pair<Integer, Integer> loc) {
 		//out of each direction, which is best to take, store that as util val
 		
 		//the value is the sum for all directions of the chance u go a direction times it's value
+		
+		//movement costs 1 (util of -1)
 
 		//left
 		if(loc.getKey()-1>=0) {
-			
+			setUtility(new Pair<Integer, Integer>(loc.getKey()-1, loc.getValue()));;
 		}
 		//up
 		if(loc.getValue()-1>=0) {
@@ -65,14 +87,91 @@ public class project3cs360s2019 {
 			
 		}
 	}
+
+	public static void setUtility(Pair<Integer, Integer> loc) {
+		
+		//left, up, right, down
+		double[] utils = new double[4];
+
+		double max_util = Double.NEGATIVE_INFINITY;
+		int max_util_index = 0;
+		String[] index_to_dirStrings = {"<", "^", ">", "v"};
+		
+		//left
+		if(loc.getKey()-1>=0) {
+			utils[0] = values[loc.getKey()-1][loc.getValue()];
+		}else {
+			utils[0] = values[loc.getKey()][loc.getValue()];
+		}
+		//up
+		if(loc.getValue()-1>=0) {
+			utils[1] = values[loc.getKey()][loc.getValue()-1];
+		}else {
+			utils[1] = values[loc.getKey()][loc.getValue()];
+		}
+		//right
+		if(loc.getKey()+1<grid_size) {
+			utils[2] = values[loc.getKey()+1][loc.getValue()];
+		}else {
+			utils[2] = values[loc.getKey()][loc.getValue()];
+		}
+		//down
+		if(loc.getValue()+1<grid_size) {
+			utils[3] = values[loc.getKey()][loc.getValue()+1];
+		}else {
+			utils[3] = values[loc.getKey()][loc.getValue()];
+		}
+		
+		for(int i = 0;i<4;i++) {
+			double curr_util = utils[i] * prob_correct_move;
+			for(int a=0;a<4;a++) {
+				if(a!=i) {
+					curr_util+=utils[a]*(1-prob_correct_move);
+				}
+			}
+			curr_util = curr_util*gamma;
+			//TODO Add R(s) here
+			if(curr_util>max_util) {
+				max_util = curr_util;
+				max_util_index = i;
+			}
+		}
+		
+		values[loc.getKey()][loc.getValue()] = max_util;
+		policies[loc.getKey()][loc.getValue()] = index_to_dirStrings[max_util_index];
+		
+	}
+	
+	public static void setObstacleValues() {
+		for(Pair<Integer, Integer> p:obstacles) {
+			values[p.getKey()][p.getValue()] = -101;
+			policies[p.getKey()][p.getValue()] = "o";
+		}
+	}
 	
 	public static void printPolicies() {
 		for(String[] pl:policies) {
 			for(String p:pl) {
-				System.out.print(p);
+//				System.out.print(p);
+				System.out.print(p+"\t");
 			}
 			System.out.println();
 		}
+		System.out.println();
+	}
+	
+	public static void printValues() {
+		for(double[] dl:values) {
+			for(double d:dl) {
+//				System.out.print(d);
+				if(d == (long) d)
+					System.out.print(String.format("%d",(long)d)+"\t");
+			    else
+			        System.out.print(round(d, 2)+"\t");
+			}
+			System.out.println();
+		}
+		System.out.println();
 	}
 	
 	public static void writePolicies() {
@@ -132,5 +231,13 @@ public class project3cs360s2019 {
 			System.out.println(destination.getKey()  + "," +destination.getValue());
 		}
 
+	}
+	
+	public static double round(double value, int places) {
+	    if (places < 0) throw new IllegalArgumentException();
+
+	    BigDecimal bd = new BigDecimal(value);
+	    bd = bd.setScale(places, RoundingMode.HALF_UP);
+	    return bd.doubleValue();
 	}
 }
