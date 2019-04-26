@@ -1,3 +1,4 @@
+import java.awt.Point;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -9,7 +10,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
 
-import javafx.util.Pair;
 
 public class project3cs360s2019 {
 	public static boolean testing = true;
@@ -20,12 +20,12 @@ public class project3cs360s2019 {
 	
 	public static int grid_size;
 	public static int num_obstacles;
-	public static ArrayList< Pair<Integer, Integer> > obstacles;
-	public static Pair<Integer, Integer> destination;
+	public static ArrayList< Point > obstacles;
+	public static Point destination;
 	
 	public static double[][] values;
 	public static String[][] policies;
-	public static ArrayList< Pair<Integer, Integer> > visited_locations;
+	public static ArrayList< Point > visited_locations;
 	
 	public static double prob_correct_move = .7;
 	public static double gamma = .9;
@@ -41,15 +41,15 @@ public class project3cs360s2019 {
 		
 		values = new double[grid_size][grid_size];
 		policies = new String[grid_size][grid_size];
-		visited_locations = new ArrayList< Pair<Integer, Integer> >();
+		visited_locations = new ArrayList< Point >();
 		
 		//filling values with V0 of -1, since movement costs 1
 		for(double[] vals: values) Arrays.fill(vals, -1);
 		for(String[] policy_row: policies) Arrays.fill(policy_row, "x");
 		
 		//goal state is 100 - 1 for movement cost, 99
-		values[destination.getKey()][destination.getValue()] = 99;
-		policies[destination.getKey()][destination.getValue()] = ".";
+		values[destination.x][destination.y] = 99;
+		policies[destination.x][destination.y] = ".";
 		
 		setObstacleValues();
 		
@@ -68,50 +68,50 @@ public class project3cs360s2019 {
 		writePolicies();
 	}
 
-	public static void evaluateNeighbors(Pair<Integer, Integer> loc) {
+	public static void evaluateNeighbors(Point loc) {
 		visited_locations.add(loc);
-		ArrayList<Pair<Integer, Integer>> children = new ArrayList<Pair<Integer, Integer>>();
+		ArrayList<Point> children = new ArrayList<Point>();
 		
 		//left
-		if(loc.getKey()-1>=0) {
-			Pair<Integer, Integer> childPair = new Pair<Integer, Integer>(loc.getKey()-1, loc.getValue());
-			if(!hasBeenVisited(childPair)) {
-				children.add(childPair);
-				setUtility(childPair);
+		if(loc.x-1>=0) {
+			Point childPoint = new Point(loc.x-1, loc.y);
+			if(!hasBeenVisited(childPoint)) {
+				children.add(childPoint);
+				setUtility(childPoint);
 			}
 		}
 		//up
-		if(loc.getValue()-1>=0) {
-			Pair<Integer, Integer> childPair = new Pair<Integer, Integer>(loc.getKey(), loc.getValue()-1);
-			if(!hasBeenVisited(childPair)) {
-				children.add(childPair);
-				setUtility(childPair);
+		if(loc.y-1>=0) {
+			Point childPoint = new Point(loc.x, loc.y-1);
+			if(!hasBeenVisited(childPoint)) {
+				children.add(childPoint);
+				setUtility(childPoint);
 			}
 		}
 		//right
-		if(loc.getKey()+1<grid_size) {
-			Pair<Integer, Integer> childPair = new Pair<Integer, Integer>(loc.getKey()+1, loc.getValue());
-			if(!hasBeenVisited(childPair)) {
-				children.add(childPair);
-				setUtility(childPair);
+		if(loc.x+1<grid_size) {
+			Point childPoint = new Point(loc.x+1, loc.y);
+			if(!hasBeenVisited(childPoint)) {
+				children.add(childPoint);
+				setUtility(childPoint);
 			}
 		}
 		//down
-		if(loc.getValue()+1<grid_size) {
-			Pair<Integer, Integer> childPair = new Pair<Integer, Integer>(loc.getKey(), loc.getValue()+1);
-			if(!hasBeenVisited(childPair)) {
-				children.add(childPair);
-				setUtility(childPair);
+		if(loc.y+1<grid_size) {
+			Point childPoint = new Point(loc.x, loc.y+1);
+			if(!hasBeenVisited(childPoint)) {
+				children.add(childPoint);
+				setUtility(childPoint);
 			}
 
 		}
 		
-		for(Pair<Integer, Integer> p:children) {
+		for(Point p:children) {
 			evaluateNeighbors(p);
 		}
 	}
 
-	public static void setUtility(Pair<Integer, Integer> loc) {
+	public static void setUtility(Point loc) {
 		
 		//left, up, right, down
 		double[] utils = new double[4];
@@ -122,28 +122,28 @@ public class project3cs360s2019 {
 		String[] index_to_dirStrings = {"<", "^", ">", "v"};
 		
 		//left
-		if(loc.getKey()-1>=0) {
-			utils[0] = values[loc.getKey()-1][loc.getValue()];
+		if(loc.x-1>=0) {
+			utils[0] = values[loc.x-1][loc.y];
 		}else {
-			utils[0] = values[loc.getKey()][loc.getValue()];
+			utils[0] = values[loc.x][loc.y];
 		}
 		//up
-		if(loc.getValue()-1>=0) {
-			utils[1] = values[loc.getKey()][loc.getValue()-1];
+		if(loc.y-1>=0) {
+			utils[1] = values[loc.x][loc.y-1];
 		}else {
-			utils[1] = values[loc.getKey()][loc.getValue()];
+			utils[1] = values[loc.x][loc.y];
 		}
 		//right
-		if(loc.getKey()+1<grid_size) {
-			utils[2] = values[loc.getKey()+1][loc.getValue()];
+		if(loc.x+1<grid_size) {
+			utils[2] = values[loc.x+1][loc.y];
 		}else {
-			utils[2] = values[loc.getKey()][loc.getValue()];
+			utils[2] = values[loc.x][loc.y];
 		}
 		//down
-		if(loc.getValue()+1<grid_size) {
-			utils[3] = values[loc.getKey()][loc.getValue()+1];
+		if(loc.y+1<grid_size) {
+			utils[3] = values[loc.x][loc.y+1];
 		}else {
-			utils[3] = values[loc.getKey()][loc.getValue()];
+			utils[3] = values[loc.x][loc.y];
 		}
 
 		if(debug_setUtility) {
@@ -169,14 +169,14 @@ public class project3cs360s2019 {
 			}
 		}
 		
-		values[loc.getKey()][loc.getValue()] = max_util;
-		policies[loc.getKey()][loc.getValue()] = index_to_dirStrings[max_util_index];
+		values[loc.x][loc.y] = max_util;
+		policies[loc.x][loc.y] = index_to_dirStrings[max_util_index];
 	}
 	
 	public static void setObstacleValues() {
-		for(Pair<Integer, Integer> p:obstacles) {
-			values[p.getKey()][p.getValue()] = -101;
-			policies[p.getKey()][p.getValue()] = "o";
+		for(Point p:obstacles) {
+			values[p.x][p.y] = -101;
+			policies[p.x][p.y] = "o";
 		}
 	}
 	
@@ -224,7 +224,7 @@ public class project3cs360s2019 {
 	}
 
 	public static void readInput(String inputFileName) {
-		obstacles = new ArrayList<Pair<Integer, Integer>>();
+		obstacles = new ArrayList<Point>();
 
 		File file = new File("input.txt");
 		if (testing) {
@@ -241,11 +241,11 @@ public class project3cs360s2019 {
 
 			for (int i = 0; i < num_obstacles; i++) {
 				String[] obstacle_string = sc.nextLine().split(",");
-				obstacles.add(new Pair<Integer, Integer>(Integer.parseInt(obstacle_string[0]), Integer.parseInt(obstacle_string[1])));
+				obstacles.add(new Point(Integer.parseInt(obstacle_string[0]), Integer.parseInt(obstacle_string[1])));
 			}
 			
 			String[] dest_string = sc.nextLine().split(",");
-			destination = new Pair<Integer, Integer>(Integer.parseInt(dest_string[0]), Integer.parseInt(dest_string[1]));
+			destination = new Point(Integer.parseInt(dest_string[0]), Integer.parseInt(dest_string[1]));
 			
 			sc.close();
 		} catch (FileNotFoundException e) {
@@ -258,14 +258,14 @@ public class project3cs360s2019 {
 			System.out.println(grid_size);
 			System.out.println(num_obstacles);
 			for (int i = 0; i < num_obstacles; i++) {
-				System.out.println(obstacles.get(i).getKey()  + "," +obstacles.get(i).getValue());
+				System.out.println(obstacles.get(i).x  + "," +obstacles.get(i).y);
 			}
-			System.out.println(destination.getKey()  + "," +destination.getValue());
+			System.out.println(destination.x  + "," +destination.y);
 		}
 
 	}
 	
-	public static boolean hasBeenVisited(Pair<Integer, Integer> p) {
+	public static boolean hasBeenVisited(Point p) {
 		return visited_locations.contains(p);
 	}
 	
