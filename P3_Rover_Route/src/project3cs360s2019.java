@@ -17,6 +17,7 @@ public class project3cs360s2019 {
 	public static boolean debug_in = true;
 	public static boolean debug_sim = true;
 	public static boolean debug_setup = true;
+	public static boolean debug_setUtility = true;
 	
 	public static int grid_size;
 	public static int num_obstacles;
@@ -64,27 +65,21 @@ public class project3cs360s2019 {
 	}
 
 	public static void evaluateNeighbors(Pair<Integer, Integer> loc) {
-		//out of each direction, which is best to take, store that as util val
-		
-		//the value is the sum for all directions of the chance u go a direction times it's value
-		
-		//movement costs 1 (util of -1)
-
 		//left
 		if(loc.getKey()-1>=0) {
 			setUtility(new Pair<Integer, Integer>(loc.getKey()-1, loc.getValue()));;
 		}
 		//up
 		if(loc.getValue()-1>=0) {
-			
+			setUtility(new Pair<Integer, Integer>(loc.getKey(), loc.getValue()-1));;			
 		}
 		//right
 		if(loc.getKey()+1<grid_size) {
-			
+			setUtility(new Pair<Integer, Integer>(loc.getKey()+1, loc.getValue()));;			
 		}
 		//down
 		if(loc.getValue()+1<grid_size) {
-			
+			setUtility(new Pair<Integer, Integer>(loc.getKey(), loc.getValue()+1));;			
 		}
 	}
 
@@ -95,6 +90,7 @@ public class project3cs360s2019 {
 
 		double max_util = Double.NEGATIVE_INFINITY;
 		int max_util_index = 0;
+//		String[] index_to_dirStrings = { "^","<", "v", ">"};
 		String[] index_to_dirStrings = {"<", "^", ">", "v"};
 		
 		//left
@@ -121,7 +117,10 @@ public class project3cs360s2019 {
 		}else {
 			utils[3] = values[loc.getKey()][loc.getValue()];
 		}
-		
+
+		if(debug_setUtility) {
+			System.out.println("loc: "+loc);
+		}
 		for(int i = 0;i<4;i++) {
 			double curr_util = utils[i] * prob_correct_move;
 			for(int a=0;a<4;a++) {
@@ -131,6 +130,11 @@ public class project3cs360s2019 {
 			}
 			curr_util = curr_util*gamma;
 			//TODO Add R(s) here
+
+			if(debug_setUtility) {
+				System.out.println("\tindex: "+i+"\n\tcurr_util: "+curr_util);
+			}
+			
 			if(curr_util>max_util) {
 				max_util = curr_util;
 				max_util_index = i;
@@ -150,9 +154,9 @@ public class project3cs360s2019 {
 	}
 	
 	public static void printPolicies() {
-		for(String[] pl:policies) {
-			for(String p:pl) {
-//				System.out.print(p);
+		for(int c = 0;c<grid_size;c++) {
+			for(int r = 0;r<grid_size;r++) {
+				String p = policies[r][c];
 				System.out.print(p+"\t");
 			}
 			System.out.println();
@@ -161,9 +165,9 @@ public class project3cs360s2019 {
 	}
 	
 	public static void printValues() {
-		for(double[] dl:values) {
-			for(double d:dl) {
-//				System.out.print(d);
+		for(int c = 0;c<grid_size;c++) {
+			for(int r = 0;r<grid_size;r++) {
+				double d = values[r][c];
 				if(d == (long) d)
 					System.out.print(String.format("%d",(long)d)+"\t");
 			    else

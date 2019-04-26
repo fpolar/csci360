@@ -1,4 +1,4 @@
 >xxx
-.xxo
-xxxx
+.^xo
+<xxx
 oxxo
