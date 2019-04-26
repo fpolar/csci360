@@ -8,16 +8,15 @@ import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Scanner;
-import java.util.TreeMap;
 
 import javafx.util.Pair;
 
 public class project3cs360s2019 {
 	public static boolean testing = true;
-	public static boolean debug_in = true;
+	public static boolean debug_in = false;
 	public static boolean debug_sim = true;
-	public static boolean debug_setup = true;
-	public static boolean debug_setUtility = true;
+	public static boolean debug_setup = false;
+	public static boolean debug_setUtility = false;
 	
 	public static int grid_size;
 	public static int num_obstacles;
@@ -26,19 +25,23 @@ public class project3cs360s2019 {
 	
 	public static double[][] values;
 	public static String[][] policies;
+	public static ArrayList< Pair<Integer, Integer> > visited_locations;
 	
 	public static double prob_correct_move = .7;
 	public static double gamma = .9;
 	public static double epsilon = .1;
 	
 	public static void main(String[] args) {
-		readInput("input-0.txt");
+		readInput("input-1.txt");
 		simulateMars();
 	}
 	
 	public static void simulateMars() {
+		setDebugFlags();
+		
 		values = new double[grid_size][grid_size];
 		policies = new String[grid_size][grid_size];
+		visited_locations = new ArrayList< Pair<Integer, Integer> >();
 		
 		//filling values with V0 of -1, since movement costs 1
 		for(double[] vals: values) Arrays.fill(vals, -1);
@@ -56,6 +59,7 @@ public class project3cs360s2019 {
 		}
 		
 		evaluateNeighbors(destination);
+		setObstacleValues();
 		
 		if(debug_sim){
 			printValues();
@@ -65,21 +69,45 @@ public class project3cs360s2019 {
 	}
 
 	public static void evaluateNeighbors(Pair<Integer, Integer> loc) {
+		visited_locations.add(loc);
+		ArrayList<Pair<Integer, Integer>> children = new ArrayList<Pair<Integer, Integer>>();
+		
 		//left
 		if(loc.getKey()-1>=0) {
-			setUtility(new Pair<Integer, Integer>(loc.getKey()-1, loc.getValue()));;
+			Pair<Integer, Integer> childPair = new Pair<Integer, Integer>(loc.getKey()-1, loc.getValue());
+			if(!hasBeenVisited(childPair)) {
+				children.add(childPair);
+				setUtility(childPair);
+			}
 		}
 		//up
 		if(loc.getValue()-1>=0) {
-			setUtility(new Pair<Integer, Integer>(loc.getKey(), loc.getValue()-1));;			
+			Pair<Integer, Integer> childPair = new Pair<Integer, Integer>(loc.getKey(), loc.getValue()-1);
+			if(!hasBeenVisited(childPair)) {
+				children.add(childPair);
+				setUtility(childPair);
+			}
 		}
 		//right
 		if(loc.getKey()+1<grid_size) {
-			setUtility(new Pair<Integer, Integer>(loc.getKey()+1, loc.getValue()));;			
+			Pair<Integer, Integer> childPair = new Pair<Integer, Integer>(loc.getKey()+1, loc.getValue());
+			if(!hasBeenVisited(childPair)) {
+				children.add(childPair);
+				setUtility(childPair);
+			}
 		}
 		//down
 		if(loc.getValue()+1<grid_size) {
-			setUtility(new Pair<Integer, Integer>(loc.getKey(), loc.getValue()+1));;			
+			Pair<Integer, Integer> childPair = new Pair<Integer, Integer>(loc.getKey(), loc.getValue()+1);
+			if(!hasBeenVisited(childPair)) {
+				children.add(childPair);
+				setUtility(childPair);
+			}
+
+		}
+		
+		for(Pair<Integer, Integer> p:children) {
+			evaluateNeighbors(p);
 		}
 	}
 
@@ -143,7 +171,6 @@ public class project3cs360s2019 {
 		
 		values[loc.getKey()][loc.getValue()] = max_util;
 		policies[loc.getKey()][loc.getValue()] = index_to_dirStrings[max_util_index];
-		
 	}
 	
 	public static void setObstacleValues() {
@@ -183,8 +210,9 @@ public class project3cs360s2019 {
 		try {
 			fw = new FileWriter("output.txt");
 			PrintWriter pw = new PrintWriter(fw);
-			for(String[] pl:policies) {
-				for(String p:pl) {
+			for(int c = 0;c<grid_size;c++) {
+				for(int r = 0;r<grid_size;r++) {
+					String p = policies[r][c];
 					pw.print(p);
 				}
 				pw.println();
@@ -237,11 +265,22 @@ public class project3cs360s2019 {
 
 	}
 	
+	public static boolean hasBeenVisited(Pair<Integer, Integer> p) {
+		return visited_locations.contains(p);
+	}
+	
 	public static double round(double value, int places) {
 	    if (places < 0) throw new IllegalArgumentException();
 
 	    BigDecimal bd = new BigDecimal(value);
 	    bd = bd.setScale(places, RoundingMode.HALF_UP);
 	    return bd.doubleValue();
+	}
+	
+	public static void setDebugFlags() {
+		debug_in &= testing;
+		debug_sim &= testing;
+		debug_setup &= testing;
+		debug_setUtility &= testing;
 	}
 }
