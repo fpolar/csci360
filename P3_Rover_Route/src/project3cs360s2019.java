@@ -15,110 +15,101 @@ public class project3cs360s2019 {
 	public static boolean testing = true;
 	public static boolean debug_in = false;
 	public static boolean debug_sim = true;
-	public static boolean debug_setup = false;
+	public static boolean debug_setup = true;
 	public static boolean debug_setUtility = false;
 	
 	public static int grid_size;
 	public static int num_obstacles;
 	public static ArrayList< Point > obstacles;
 	public static Point destination;
-	
+
 	public static double[][] values;
+	public static double[][] values_star;
 	public static String[][] policies;
-	public static ArrayList< Point > visited_locations;
 	
 	public static double prob_correct_move = .7;
 	public static double gamma = .9;
 	public static double epsilon = .1;
 	
 	public static void main(String[] args) {
-		readInput("input-1.txt");
+		readInput("input-2.txt");
 		simulateMars();
 	}
 	
 	public static void simulateMars() {
 		setDebugFlags();
-		
+
 		values = new double[grid_size][grid_size];
+		values_star = new double[grid_size][grid_size];
 		policies = new String[grid_size][grid_size];
-		visited_locations = new ArrayList< Point >();
 		
 		//filling values with V0 of -1, since movement costs 1
-		for(double[] vals: values) Arrays.fill(vals, -1);
+		for(double[] vals: values) Arrays.fill(vals, 0);
+		for(double[] vals: values_star) Arrays.fill(vals, 0);
 		for(String[] policy_row: policies) Arrays.fill(policy_row, "x");
 		
 		//goal state is 100 - 1 for movement cost, 99
-		values[destination.x][destination.y] = 99;
-		policies[destination.x][destination.y] = ".";
-		
-		setObstacleValues();
+		//values[destination.x][destination.y] = 99;
+//		setObstacleValues();
 		
 		if(debug_setup) {
 			printValues();
 			printPolicies();
 		}
 		
-		evaluateNeighbors(destination);
-		setObstacleValues();
+		//evaluateNeighbors(destination);		
+		int k = 1000;
+
+		while(k-->0) {
+			boolean converged = true;
+			for(int c = 0;c<grid_size;c++) {
+				for(int r = 0;r<grid_size;r++) {
+					if(destination.equals(new Point(r, c))) { 
+						values_star[r][c] = 99;
+					}else {
+						setUtility(new Point(r, c));
+						if(Math.abs(values_star[r][c] - values[r][c]) > epsilon*(1-gamma)/gamma) {
+							converged = false;
+						}
+					}
+				}
+			}
+			
+			if(converged) {
+				if(debug_sim) {
+					System.out.println("converged");
+				}
+				break;
+			}
+
+			for(int c = 0;c<grid_size;c++) {
+				for(int r = 0;r<grid_size;r++) {
+					values[r][c] = values_star[r][c];
+				}
+			}
+			if(debug_sim) {
+//				printValues();
+			}
+		}
+
+		setObstaclePolicies();
+		policies[destination.x][destination.y] = ".";
 		
 		if(debug_sim){
+			System.out.println("k = "+k);
 			printValues();
-			printPolicies();
+//			printPolicies();
 		}
 		writePolicies();
 	}
 
-	public static void evaluateNeighbors(Point loc) {
-		visited_locations.add(loc);
-		ArrayList<Point> children = new ArrayList<Point>();
-		
-		//left
-		if(loc.x-1>=0) {
-			Point childPoint = new Point(loc.x-1, loc.y);
-			if(!hasBeenVisited(childPoint)) {
-				children.add(childPoint);
-				setUtility(childPoint);
-			}
-		}
-		//up
-		if(loc.y-1>=0) {
-			Point childPoint = new Point(loc.x, loc.y-1);
-			if(!hasBeenVisited(childPoint)) {
-				children.add(childPoint);
-				setUtility(childPoint);
-			}
-		}
-		//right
-		if(loc.x+1<grid_size) {
-			Point childPoint = new Point(loc.x+1, loc.y);
-			if(!hasBeenVisited(childPoint)) {
-				children.add(childPoint);
-				setUtility(childPoint);
-			}
-		}
-		//down
-		if(loc.y+1<grid_size) {
-			Point childPoint = new Point(loc.x, loc.y+1);
-			if(!hasBeenVisited(childPoint)) {
-				children.add(childPoint);
-				setUtility(childPoint);
-			}
-
-		}
-		
-		for(Point p:children) {
-			evaluateNeighbors(p);
-		}
-	}
-
-	public static void setUtility(Point loc) {
+	public static double setUtility(Point loc) {
 		
 		//left, up, right, down
 		double[] utils = new double[4];
 
 		double max_util = Double.NEGATIVE_INFINITY;
 		int max_util_index = 0;
-//		String[] index_to_dirStrings = { "^","<", "v", ">"};
 		String[] index_to_dirStrings = {"<", "^", ">", "v"};
 		
 		//left
@@ -141,26 +132,31 @@ public class project3cs360s2019 {
 		}
 		//down
 		if(loc.y+1<grid_size) {
-			utils[3] = values[loc.x][loc.y+1];
+			utils[3] = values[loc.x][loc.y+1];		
 		}else {
 			utils[3] = values[loc.x][loc.y];
 		}
 
 		if(debug_setUtility) {
 			System.out.println("loc: "+loc);
+			System.out.println("utils :" +Arrays.toString(utils));
 		}
+		
 		for(int i = 0;i<4;i++) {
-			double curr_util = utils[i] * prob_correct_move;
+			double curr_util = .7 * utils[i];
 			for(int a=0;a<4;a++) {
 				if(a!=i) {
-					curr_util+=utils[a]*(1-prob_correct_move);
+					curr_util += .1 * utils[a]; 
 				}
 			}
-			curr_util = curr_util*gamma;
-			//TODO Add R(s) here
-
+			
 			if(debug_setUtility) {
-				System.out.println("\tindex: "+i+"\n\tcurr_util: "+curr_util);
+				double test_max = curr_util * gamma;
+				test_max += -1;
+				if(obstacles.contains(loc)) {
+					test_max += -100;
+				}
+				System.out.println("\tindex: "+i+"\n\tcurr_util: "+curr_util+"\n\ttest_max: "+test_max);
 			}
 			
 			if(curr_util>max_util) {
@@ -168,14 +164,31 @@ public class project3cs360s2019 {
 				max_util_index = i;
 			}
 		}
+//		0,0 = -88,  0,3 = -76
+		max_util *= gamma;
+		max_util += -1;
+		if(obstacles.contains(loc)) {
+			max_util += -100;
+		}
+
+		if(debug_setUtility) {
+			System.out.println("\tmax: "+max_util);
+		}
 		
-		values[loc.x][loc.y] = max_util;
+
+		values_star[loc.x][loc.y] = max_util;
 		policies[loc.x][loc.y] = index_to_dirStrings[max_util_index];
+		return max_util;
 	}
+
+//	public static void setObstacleValues() {
+//		for(Point p:obstacles) {
+//			values[p.x][p.y] = -101;
+//		}
+//	}
 	
-	public static void setObstacleValues() {
+	public static void setObstaclePolicies() {
 		for(Point p:obstacles) {
-			values[p.x][p.y] = -101;
 			policies[p.x][p.y] = "o";
 		}
 	}
@@ -265,9 +278,6 @@ public class project3cs360s2019 {
 
 	}
 	
-	public static boolean hasBeenVisited(Point p) {
-		return visited_locations.contains(p);
-	}
 	
 	public static double round(double value, int places) {
 	    if (places < 0) throw new IllegalArgumentException();
